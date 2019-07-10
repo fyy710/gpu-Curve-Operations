@@ -230,30 +230,28 @@ void run_prover(
 }
 
 int main(int argc, char **argv) {
-  setbuf(stdout, NULL);
-  std::string curve(argv[1]);
-  std::string mode(argv[2]);
+    mnt4753_libsnark::init_public_params();
 
-  const char *params_path = argv[3];
+    auto inputs = fopen(argv[2], "r");
+    auto outputs = fopen(argv[3], "w");
 
-  if (mode == "compute") {
-      const char *input_path = argv[4];
-      const char *output_path = argv[5];
+    while (true) {
+        size_t n;
+        size_t elts_read = fread((void *) &n, sizeof(size_t), 1, inputs);
 
-      if (curve == "MNT4753") {
-          run_prover<mnt4753_libsnark>(params_path, input_path, output_path, "MNT4753_preprocessed");
-      } else if (curve == "MNT6753") {
-          run_prover<mnt6753_libsnark>(params_path, input_path, output_path, "MNT6753_preprocessed");
-      }
-  } else if (mode == "preprocess") {
-#if 0
-      if (curve == "MNT4753") {
-          run_preprocess<mnt4753_libsnark>(params_path);
-      } else if (curve == "MNT6753") {
-          run_preprocess<mnt4753_libsnark>(params_path);
-      }
-#endif
-  }
+        if (elts_read == 0) { break; }
 
-  return 0;
+        size_t data_size = n * 2 * ELT_BYTES;
+
+        auto x = allocate_memory(data_size);
+        fread((void *)x.get(), data_size, 1, inputs);
+        auto y = allocate_memory(data_size);
+        fread((void *)y.get(), data_size, 1, inputs);
+        auto out = allocate_memory(data_size);
+
+        ec_multi<Fp2_MNT4>(x.get(), y.get(), out.get(), n);
+        cudaDeviceSynchronize();
+        fwrite((void *)out.get(), data_size, 1, outputs);
+    }
+    return 0;
 }

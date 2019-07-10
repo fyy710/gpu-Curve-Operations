@@ -177,6 +177,36 @@ ec_reduce(cudaStream_t &strm, var *X, const var *w, size_t n)
     }
 }
 
+template< typename EC >
+__global__ void
+ec_multi_kernel(var *X, var *Y, var *Out, size_t n)
+{
+    int T = threadIdx.x, B = blockIdx.x, D = blockDim.x;
+    int elts_per_block = D / BIG_WIDTH;
+    int tileIdx = T / BIG_WIDTH;
+
+    int idx = elts_per_block * B + tileIdx;
+
+    if (idx < n) {
+        EC x, y, z;
+        int off = idx * EC::DEGREE * ELT_LIMBS;
+
+        EC::load(x, X + off);
+        EC::load(y, Y + off);
+        EC::mul(z, x, y);
+
+        EC::store(Out + off, z);
+    }
+}
+
+template<typename EC >
+void
+ec_multi(var *X, var *Y, var *Out, size_t n)
+{
+    size_t nblocks = (n * BIG_WIDTH + threads_per_block - 1) / threads_per_block;
+    ec_multi_kernel<EC><<< nblocks, threads_per_block >>>(X, Y, Out, n);
+}
+
 static inline double as_mebibytes(size_t n) {
     return n / (long double)(1UL << 20);
 }
