@@ -256,9 +256,9 @@ add_subdirectory(libsnark)
 add_subdirectory(cuda-fixnum)
 
 add_executable (
-    cuda_prover_piecewise
+    main
     EXCLUDE_FROM_ALL
 
-    cuda_prover_piecewise.cu
+    main.cu
 )
-target_link_libraries(cuda_prover_piecewise cuda_main prover_reference_functions)
+target_link_libraries(main cuda_main prover_reference_functions)

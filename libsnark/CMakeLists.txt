@@ -201,18 +201,6 @@ target_link_libraries(
   snark
 )
 
-add_executable(
-  main
-  EXCLUDE_FROM_ALL
-
-  main.cpp
-)
-target_link_libraries(
-  main
-
-  snark
-)
-
 add_library (
     prover_reference_functions STATIC
     prover_reference_functions.cpp
