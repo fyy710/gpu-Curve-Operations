@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
 
         if (elts_read == 0) { break; }
 
-        size_t data_size = n * 2 * ELT_BYTES;
+        size_t data_size = n * 3 * ELT_BYTES;
 
         auto x = allocate_memory(data_size);
         fread((void *)x.get(), data_size, 1, inputs);
@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
         fread((void *)y.get(), data_size, 1, inputs);
         auto out = allocate_memory(data_size);
 
-        ec_multi<Fp2_MNT4>(x.get(), y.get(), out.get(), n);
+        ec_multi<Fp3_MNT6>(x.get(), y.get(), out.get(), n);
         cudaDeviceSynchronize();
         fwrite((void *)out.get(), data_size, 1, outputs);
     }
