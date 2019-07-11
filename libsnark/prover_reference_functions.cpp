@@ -451,6 +451,13 @@ void mnt4753_libsnark::groth16_output_write(mnt4753_libsnark::G1 *A,
   write_g1<mnt4753_pp>(out, C->data);
   fclose(out);
 }
+
+void mnt4753_libsnark::groth16_write(mnt4753_libsnark::G1 *A,
+                                            mnt4753_libsnark::G2 *B,
+                                            FILE *out) {
+  write_g1<mnt4753_pp>(out, A->data);
+  write_g2<mnt4753_pp>(out, B->data);
+}
 class mnt6753_libsnark::groth16_input {
 public:
   std::shared_ptr<std::vector<Fr<mnt6753_pp>>> w;
@@ -790,6 +797,12 @@ void mnt6753_libsnark::groth16_output_write(mnt6753_libsnark::G1 *A,
   write_g2<mnt6753_pp>(out, B->data);
   write_g1<mnt6753_pp>(out, C->data);
   fclose(out);
+}
+void mnt6753_libsnark::groth16_write(mnt6753_libsnark::G1 *A,
+                                            mnt6753_libsnark::G2 *B,
+                                            FILE *out) {
+  write_g1<mnt6753_pp>(out, A->data);
+  write_g2<mnt6753_pp>(out, B->data);
 }
 
 mnt4753_libsnark::G1 *

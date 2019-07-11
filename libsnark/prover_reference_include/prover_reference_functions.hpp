@@ -90,6 +90,7 @@ public:
 
   static void groth16_output_write(G1 *A, G2 *B, G1 *C,
                                    const char *output_path);
+  static void groth16_write(G1 *A, G2 *B, FILE *output);
 };
 class mnt6753_libsnark {
 public:
@@ -177,4 +178,5 @@ public:
 
   static void groth16_output_write(G1 *A, G2 *B, G1 *C,
                                    const char *output_path);
+  static void groth16_write(G1 *A, G2 *B, FILE *output);
 };

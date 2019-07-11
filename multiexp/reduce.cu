@@ -207,6 +207,55 @@ ec_multi(var *X, var *Y, var *Out, size_t n)
     ec_multi_kernel<EC><<< nblocks, threads_per_block >>>(X, Y, Out, n);
 }
 
+template< typename EC >
+__global__ void
+ec_sum_points(var *X, const var *Y, size_t n, bool added)
+{
+    int T = threadIdx.x, B = blockIdx.x, D = blockDim.x;
+    int elts_per_block = D / BIG_WIDTH;
+    int tileIdx = T / BIG_WIDTH;
+
+    int idx = elts_per_block * B + tileIdx;
+
+    if (idx < n) {
+        EC z, x, y;
+        int off = idx * EC::NELTS * ELT_LIMBS;
+
+        if (added) {
+            EC::load_jac(x, X + off);
+            EC::load_jac(y, Y + off);
+        } else {
+            EC::load_affine(x, X + off);
+            EC::load_affine(y, Y + off);
+        }
+
+        EC::add(z, x, y);
+
+        EC::store_jac(X + off, z);
+    }
+}
+
+template<typename EC >
+void
+ec_point_add(cudaStream_t &strm, var *in, size_t n)
+{
+    cudaStreamCreate(&strm);
+    static constexpr size_t pt_limbs = EC::NELTS * ELT_LIMBS;
+
+    size_t nblocks = (n * BIG_WIDTH + threads_per_block - 1) / threads_per_block;
+
+    size_t r = n & 1, m = n / 2;
+    bool added = false; // TODO: n is odd
+    for ( ; m != 0; r = m & 1, m >>= 1) {
+        nblocks = (m * BIG_WIDTH + threads_per_block - 1) / threads_per_block;
+
+        ec_sum_points<EC><<<nblocks, threads_per_block, 0, strm>>>(in, in + m*pt_limbs, m, added);
+        added = true;
+        if (r)
+            ec_sum_points<EC><<<1, threads_per_block, 0, strm>>>(in, in + 2*m*pt_limbs, 1, added);
+    }
+}
+
 static inline double as_mebibytes(size_t n) {
     return n / (long double)(1UL << 20);
 }
@@ -262,21 +311,14 @@ load_points(size_t n, FILE *inputs)
     static constexpr size_t aff_pt_bytes = 2 * coord_bytes;
     static constexpr size_t jac_pt_bytes = 3 * coord_bytes;
 
-    size_t total_aff_bytes = n * aff_pt_bytes;
     size_t total_jac_bytes = n * jac_pt_bytes;
-
+    printf("total bytes %d\n", total_jac_bytes);
     auto mem = allocate_memory(total_jac_bytes);
-    if (fread((void *)mem.get(), total_aff_bytes, 1, inputs) < 1) {
-        fprintf(stderr, "Failed to read all curve poinst\n");
-        abort();
-    }
-
-    // insert space for z-coordinates
-    char *cmem = reinterpret_cast<char *>(mem.get()); //lazy
-    for (size_t i = n - 1; i > 0; --i) {
-        char tmp_pt[aff_pt_bytes];
-        memcpy(tmp_pt, cmem + i * aff_pt_bytes, aff_pt_bytes);
-        memcpy(cmem + i * jac_pt_bytes, tmp_pt, aff_pt_bytes);
+    for (size_t i = 0; i < n; i ++) {
+        if (fread((void *)mem.get() + i * jac_pt_bytes, aff_pt_bytes, 1, inputs) < 1) {
+            fprintf(stderr, "Failed to read all curve poinst\n");
+            abort();
+        }
     }
     return mem;
 }
