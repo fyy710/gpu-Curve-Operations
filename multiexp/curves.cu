@@ -155,8 +155,6 @@ struct ec_jac {
     static void
     mixed_add(ec_jac &R, const ec_jac &P, const ec_jac &Q) {
         // Would be better to know that Q != 0
-        printf("P x %x\n", P.x);
-        printf("Q x %x\n", Q.x);
         if (is_zero(Q)) {
             R = P;
             return;
@@ -254,15 +252,6 @@ struct ec_jac {
         // TODO: It should be the caller's responsibility to check if
         // the operands are zero
         // Need P != 0 and Q != 0 for computation below to work
-#if 0
-        printf("curve add\n");
-        printf("p.x %x\n", P.x);
-        printf("p.y %x\n", P.y);
-        printf("p.z %x\n", P.z);
-        printf("p.x %x\n", Q.x);
-        printf("p.y %x\n", Q.y);
-        printf("p.z %x\n", Q.z);
-#endif
         if (is_zero(P)) {
             R = Q;
             return;

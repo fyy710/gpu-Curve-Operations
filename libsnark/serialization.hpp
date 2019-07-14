@@ -61,9 +61,6 @@ void write_g2(FILE* output, G2<ppT> g) {
     return;
   }
 
-  g.X().c0.mont_repr.print();
-  g.Y().c0.mont_repr.print();
-  g.Z().c0.mont_repr.print();
   g.to_affine_coordinates();
   write_fqe<ppT>(output, g.X());
   write_fqe<ppT>(output, g.Y());

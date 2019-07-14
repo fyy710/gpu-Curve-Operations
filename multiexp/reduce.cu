@@ -209,7 +209,7 @@ ec_multi(var *X, var *Y, var *Out, size_t n)
 
 template< typename EC >
 __global__ void
-ec_sum_points(var *X, const var *Y, size_t n, bool added)
+ec_sum_points(var *X, const var *Y, size_t n)
 {
     int T = threadIdx.x, B = blockIdx.x, D = blockDim.x;
     int elts_per_block = D / BIG_WIDTH;
@@ -221,13 +221,8 @@ ec_sum_points(var *X, const var *Y, size_t n, bool added)
         EC z, x, y;
         int off = idx * EC::NELTS * ELT_LIMBS;
 
-        if (added) {
-            EC::load_jac(x, X + off);
-            EC::load_jac(y, Y + off);
-        } else {
-            EC::load_affine(x, X + off);
-            EC::load_affine(y, Y + off);
-        }
+        EC::load_jac(x, X + off);
+        EC::load_jac(y, Y + off);
 
         EC::add(z, x, y);
 
@@ -245,14 +240,12 @@ ec_point_add(cudaStream_t &strm, var *in, size_t n)
     size_t nblocks = (n * BIG_WIDTH + threads_per_block - 1) / threads_per_block;
 
     size_t r = n & 1, m = n / 2;
-    bool added = false; // TODO: n is odd
     for ( ; m != 0; r = m & 1, m >>= 1) {
         nblocks = (m * BIG_WIDTH + threads_per_block - 1) / threads_per_block;
 
-        ec_sum_points<EC><<<nblocks, threads_per_block, 0, strm>>>(in, in + m*pt_limbs, m, added);
-        added = true;
+        ec_sum_points<EC><<<nblocks, threads_per_block, 0, strm>>>(in, in + m*pt_limbs, m);
         if (r)
-            ec_sum_points<EC><<<1, threads_per_block, 0, strm>>>(in, in + 2*m*pt_limbs, 1, added);
+            ec_sum_points<EC><<<1, threads_per_block, 0, strm>>>(in, in + 2*m*pt_limbs, 1);
     }
 }
 
@@ -312,7 +305,6 @@ load_points(size_t n, FILE *inputs)
     static constexpr size_t jac_pt_bytes = 3 * coord_bytes;
 
     size_t total_jac_bytes = n * jac_pt_bytes;
-    printf("total bytes %d\n", total_jac_bytes);
     auto mem = allocate_memory(total_jac_bytes);
     for (size_t i = 0; i < n; i ++) {
         if (fread((void *)mem.get() + i * jac_pt_bytes, aff_pt_bytes, 1, inputs) < 1) {

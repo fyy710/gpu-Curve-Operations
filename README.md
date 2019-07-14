@@ -1,7 +1,6 @@
-### Quadratic Extension
-This directory contains a reference GPU implementation of
-[Quadratic Extension](https://codaprotocol.github.io/snark-challenge/problem-02-Quadratic%20extension%20arithmetic.html)
-using [libff](README-libff.md) and GPU.
+### Curve Operations
+This directory contains a reference GPU implementation of 
+[Curve Operations](https://codaprotocol.github.io/snark-challenge/problem-04-Curve%20operations.html).
 
 
 ### Build
@@ -9,10 +8,13 @@ using [libff](README-libff.md) and GPU.
 ./build.sh
 ```
 
-### Using the inputs generated in CPU
+### Generate Inputs
+``` bash
+./generate_inputs
+```
 
 ### Run
-Support inputs in montgomery representation:
+For interpreting inputs in montgomery representation:
 ``` bash
 ./main compute inputs outputs
 ```
